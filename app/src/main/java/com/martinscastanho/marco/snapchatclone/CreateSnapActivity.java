@@ -22,7 +22,6 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
@@ -104,12 +103,11 @@ public class CreateSnapActivity extends AppCompatActivity {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                 // taskSnapshot.getMetadata() contains file metadata such as size, content-type, etc.
-                StorageMetadata metadata = taskSnapshot.getMetadata();
-                assert metadata != null;
-                StorageReference reference = metadata.getReference();
-                assert reference != null;
-                Task<Uri> uriTask = reference.getDownloadUrl();
+                assert taskSnapshot.getMetadata() != null;
+                assert taskSnapshot.getMetadata().getReference() != null;
+                Task<Uri> uriTask = taskSnapshot.getMetadata().getReference().getDownloadUrl();
                 Log.d("Upload", uriTask.toString());
+                selectUsersToSend();
             }
         });
     }
@@ -117,5 +115,10 @@ public class CreateSnapActivity extends AppCompatActivity {
     public void getPhoto(){
         Intent importImageIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(importImageIntent, 1);
+    }
+
+    public void selectUsersToSend(){
+        Intent selectUsersIntent = new Intent(getApplicationContext(), ChooseUserActivity.class);
+        startActivity(selectUsersIntent);
     }
 }

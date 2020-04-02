@@ -70,8 +70,7 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d("Sign Up", "success");
 
                                 // Add user to the database
-                                FirebaseDatabase database = FirebaseDatabase.getInstance();
-                                DatabaseReference rootReference = database.getReference();
+                                DatabaseReference rootReference = FirebaseDatabase.getInstance().getReference();
 
                                 assert task.getResult() != null;
                                 assert task.getResult().getUser() != null;
@@ -96,8 +95,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void login(){
-        FirebaseUser user = firebaseAuth.getCurrentUser();
-
         Intent snapsIntent = new Intent(getApplicationContext(), SnapsActivity.class);
         startActivity(snapsIntent);
     }
