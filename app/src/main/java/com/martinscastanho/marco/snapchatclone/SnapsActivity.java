@@ -9,6 +9,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -26,6 +28,7 @@ public class SnapsActivity extends AppCompatActivity {
     ListView listView;
     ArrayAdapter<String> arrayAdapter;
     ArrayList<String> emails;
+    ArrayList<DataSnapshot> snaps;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +38,7 @@ public class SnapsActivity extends AppCompatActivity {
         firebaseAuth = FirebaseAuth.getInstance();
 
         emails = new ArrayList<>();
+        snaps = new ArrayList<>();
 
         listView = findViewById(R.id.snapsListView);
         arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, emails);
@@ -47,6 +51,7 @@ public class SnapsActivity extends AppCompatActivity {
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                 assert dataSnapshot.child("from").getValue() != null;
                 emails.add((String) dataSnapshot.child("from").getValue());
+                snaps.add(dataSnapshot);
                 arrayAdapter.notifyDataSetChanged();
             }
 
@@ -58,6 +63,19 @@ public class SnapsActivity extends AppCompatActivity {
             public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {}
+        });
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                DataSnapshot dataSnapshot = snaps.get(position);
+                Intent viewSnapIntent = new Intent(getApplicationContext(), ViewSnapActivity.class);
+                viewSnapIntent.putExtra("imageId", (String) dataSnapshot.child("imageId").getValue());
+                viewSnapIntent.putExtra("imageUrl", (String) dataSnapshot.child("imageUrl").getValue());
+                viewSnapIntent.putExtra("message", (String) dataSnapshot.child("message").getValue());
+                viewSnapIntent.putExtra("snapId", dataSnapshot.getKey());
+                startActivity(viewSnapIntent);
+            }
         });
     }
 
