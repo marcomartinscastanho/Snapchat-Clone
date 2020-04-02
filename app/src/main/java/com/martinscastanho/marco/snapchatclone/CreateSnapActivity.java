@@ -12,14 +12,14 @@ import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
+
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -27,12 +27,13 @@ import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 
 public class CreateSnapActivity extends AppCompatActivity {
     ImageView createSnapImageView;
     EditText messageEditText;
-    String imageName = UUID.randomUUID().toString() + ".jpg";
+    String imageId = UUID.randomUUID().toString() + ".jpg";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,24 +91,28 @@ public class CreateSnapActivity extends AppCompatActivity {
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
         byte[] data = baos.toByteArray();
 
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference().child("images").child(imageName);
+        final StorageReference storageRef = FirebaseStorage.getInstance().getReference().child("images").child(imageId);
 
         UploadTask uploadTask = storageRef.putBytes(data);
-        uploadTask.addOnFailureListener(new OnFailureListener() {
+        uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
             @Override
-            public void onFailure(@NonNull Exception exception) {
-                // Handle unsuccessful uploads
-                Toast.makeText(CreateSnapActivity.this, "Upload failed.", Toast.LENGTH_SHORT).show();
+            public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                if (!task.isSuccessful()) {
+                    throw Objects.requireNonNull(task.getException());
+                }
+                // Continue with the task to get the download URL
+                return storageRef.getDownloadUrl();
             }
-        }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+        }).addOnCompleteListener(new OnCompleteListener<Uri>() {
             @Override
-            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                // taskSnapshot.getMetadata() contains file metadata such as size, content-type, etc.
-                assert taskSnapshot.getMetadata() != null;
-                assert taskSnapshot.getMetadata().getReference() != null;
-                Task<Uri> uriTask = taskSnapshot.getMetadata().getReference().getDownloadUrl();
-                Log.d("Upload", uriTask.toString());
-                selectUsersToSend();
+            public void onComplete(@NonNull Task<Uri> task) {
+                if (task.isSuccessful()) {
+                    Uri downloadUri = task.getResult();
+                    assert downloadUri != null;
+                    selectUsersToSend(downloadUri.toString());
+                } else {
+                    Toast.makeText(CreateSnapActivity.this, "Upload failed.", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -117,8 +122,11 @@ public class CreateSnapActivity extends AppCompatActivity {
         startActivityForResult(importImageIntent, 1);
     }
 
-    public void selectUsersToSend(){
+    public void selectUsersToSend(String imageUrl){
         Intent selectUsersIntent = new Intent(getApplicationContext(), ChooseUserActivity.class);
+        selectUsersIntent.putExtra("imageUrl", imageUrl);
+        selectUsersIntent.putExtra("imageId", imageId);
+        selectUsersIntent.putExtra("message", messageEditText.getText().toString());
         startActivity(selectUsersIntent);
     }
 }
