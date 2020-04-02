@@ -58,7 +58,18 @@ public class SnapsActivity extends AppCompatActivity {
             @Override
             public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
             @Override
-            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {}
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+                int i = 0;
+                for(DataSnapshot snap : snaps){
+                    assert snap.getKey() != null;
+                    if(snap.getKey().equals(dataSnapshot.getKey())){
+                        snaps.remove(i);
+                        emails.remove(i);
+                        arrayAdapter.notifyDataSetChanged();
+                    }
+                    i++;
+                }
+            }
             @Override
             public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {}
             @Override
